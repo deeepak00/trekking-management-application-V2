@@ -25,11 +25,16 @@ def create_admin():
             phone='+91-9000000000',
             bio='System Administrator'
         )
-        admin.set_password("admin@123")
+        admin.set_password("Admin@123")
         db.session.add(admin)
         db.session.commit()
     
 app = create_app()
+
+from routes.auth import auth_bp
+from routes.admin import admin_bp
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
 if __name__ == "__main__":
     db.create_all()
