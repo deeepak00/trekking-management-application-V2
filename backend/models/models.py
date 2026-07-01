@@ -20,9 +20,11 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     status = db.Column(db.String(20), nullable=False, default='active') # active | blacklisted | inactive
     created_at = db.Column(db.DateTime, default=utcnow)
+
      # one-to-one relationship
     trekker_info = db.relationship('TrekkerInfo', back_populates='user', uselist=False, cascade='all, delete-orphan')
     staff_info   = db.relationship('StaffInfo',   back_populates='user', uselist=False, cascade='all, delete-orphan')
+    
      # one-to-many relationship
     assigned_treks = db.relationship('Trek',         backref='assigned_staff', lazy='dynamic', foreign_keys='Trek.staff_id')
     bookings       = db.relationship('Booking',      backref='user', lazy='dynamic')
@@ -36,6 +38,25 @@ class User(db.Model):
 
     def check_password(self, raw):
         return check_password_hash(self.password, raw)
+    
+    def to_dict(self, full=False):
+        d = {
+            'id':             self.id,
+            'name':           self.name,
+            'username':       self.username,
+            'email':          self.email,
+            'role':           self.role,
+            'status':         self.status,
+            'phone':          self.phone,
+            'bio':            self.bio,
+            'avatar_url':     self.avatar_url,
+            'created_at':     self.created_at.isoformat() if self.created_at else None,
+            'total_bookings': self.bookings.count(),
+        }
+        if full:
+            if self.trekker_info: d['trekker_info'] = self.trekker_info.to_dict()
+            if self.staff_info:   d['staff_info']   = self.staff_info.to_dict()
+        return d
 
 
 class TrekkerInfo(db.Model):
@@ -50,6 +71,20 @@ class TrekkerInfo(db.Model):
     medical_notes        = db.Column(db.Text)
     user = db.relationship('User', back_populates='trekker_info')
 
+    def to_dict(self):
+        completed = Booking.query.filter_by(
+            user_id=self.user_id, status='Completed'
+        ).count()
+        return {
+            'experience_level':     self.experience_level,
+            'fitness_level':        self.fitness_level,
+            'preferred_difficulty': self.preferred_difficulty,
+            'emergency_contact':    self.emergency_contact,
+            'emergency_phone':      self.emergency_phone,
+            'medical_notes':        self.medical_notes,
+            'total_trek_done':      completed
+        }
+
 
 
 class StaffInfo(db.Model):
@@ -61,6 +96,18 @@ class StaffInfo(db.Model):
     years_experience = db.Column(db.Integer, default=0)
     language         = db.Column(db.String(200))   # comma-separated: Hindi, English, Nepali
     user = db.relationship('User', back_populates='staff_info')
+
+    def to_dict(self):
+        treks_led = Trek.query.filter_by(
+            staff_id=self.user_id, status='Completed'
+        ).count()
+        return {
+            'specialization':   self.specialization,
+            'certification':    self.certification,
+            'years_experience': self.years_experience,
+            'language':         self.language,
+            'treks_led':        treks_led,
+        }
 
 
 class Trek(db.Model):
@@ -100,6 +147,45 @@ class Trek(db.Model):
         if not reviews:
             return 0
         return round(sum(r.rating for r in reviews) / len(reviews), 1)
+    
+
+    def to_dict(self):
+        staff    = db.session.get(User, self.staff_id) if self.staff_id else None
+        staff_si = staff.staff_info if staff else None
+        return {
+            'id':           self.id,
+            'name':         self.name,
+            'location':     self.location,
+            'difficulty':   self.difficulty,
+            'duration':     self.duration,
+            'total_slots':      self.total_slots,
+            'available_slots':  self.available_slots,
+            'staff_id':                self.staff_id,
+            'staff_name':              staff.name if staff else None,
+            'staff_phone':             staff.phone if staff else None,
+            'staff_email':             staff.email if staff else None,
+            'staff_specialization':    staff_si.specialization   if staff_si else None,
+            'staff_years_exp':         staff_si.years_experience if staff_si else None,
+            'staff_languages':         staff_si.language         if staff_si else None,
+            'status':     self.status,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date':   self.end_date.isoformat()   if self.end_date   else None,
+            'description':      self.description,
+            'highlights':       self.highlights,
+            'included':         self.included,
+            'not_included':     self.not_included,
+            'image_url':        self.image_url,
+            'altitude':         self.altitude,
+            'price':            self.price,
+            'meeting_point':    self.meeting_point,
+            'equipment_needed': self.equipment_needed,
+            'min_age':          self.min_age,
+            'max_age':          self.max_age,
+            'booked_count':     self.bookings.filter_by(status='Booked').count(),
+            'avg_rating':       self.avg_rating(),
+            'review_count':     self.reviews.count(),
+            'created_at':       self.created_at.isoformat() if self.created_at else None,
+        }
 
 
 
@@ -117,6 +203,35 @@ class Booking(db.Model):
     notes          = db.Column(db.Text)
     updated_at     = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
+    def to_dict(self):
+        t = self.trek
+        u = self.user
+        reviewed = Review.query.filter_by(
+            user_id=self.user_id, trek_id=self.trek_id
+        ).first()
+        return {
+            'id':              self.id,
+            'user_id':         self.user_id,
+            'user_name':       u.get_name() if u else None,
+            'user_email':      u.email      if u else None,
+            'trek_id':         self.trek_id,
+            'trek_name':       t.name       if t else None,
+            'trek_location':   t.location   if t else None,
+            'trek_difficulty': t.difficulty if t else None,
+            'booking_date':    self.booking_date.isoformat() if self.booking_date else None,
+            'status':          self.status,
+            'payment_status':  self.payment_status,
+            'payment_method':  self.payment_method,
+            'transaction_id':  self.transaction_id,
+            'amount':          self.amount,
+            'notes':           self.notes,
+            'start_date':      t.start_date.isoformat() if t and t.start_date else None,
+            'end_date':        t.end_date.isoformat()   if t and t.end_date   else None,
+            'reviewed':        reviewed is not None,
+            'review_id':       reviewed.id if reviewed else None,
+        }
+
+
    
 class Review(db.Model):
     __tablename__ = 'reviews'
@@ -128,6 +243,20 @@ class Review(db.Model):
     comment    = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utcnow)
 
+    def to_dict(self):
+        u = self.user
+        t = self.trek
+        return {
+            'id':         self.id,
+            'user_id':    self.user_id,
+            'trek_id':    self.trek_id,
+            'user_name':  u.get_name() if u else None,
+            'trek_name':  t.name       if t else None,
+            'rating':     self.rating,
+            'comment':    self.comment,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
 
 class Wishlist(db.Model):
     __tablename__ = 'wishlist'
@@ -136,6 +265,16 @@ class Wishlist(db.Model):
     user_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     trek_id    = db.Column(db.Integer, db.ForeignKey('treks.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
+
+    def to_dict(self):
+        t = self.trek
+        return {
+            'id':            self.id,
+            'trek_id':       self.trek_id,
+            'trek_name':     t.name       if t else None,
+            'trek_location': t.location   if t else None,
+            'created_at':    self.created_at.isoformat() if self.created_at else None,
+        }
 
 
 class Notification(db.Model):
@@ -147,3 +286,14 @@ class Notification(db.Model):
     type       = db.Column(db.String(20), default='info')   # info | success | warning | danger
     is_read    = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=utcnow)
+
+    def to_dict(self):
+        return {
+            'id':         self.id,
+            'user_id':    self.user_id,
+            'title':      self.title,
+            'message':    self.message,
+            'type':       self.type,
+            'is_read':    self.is_read,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
