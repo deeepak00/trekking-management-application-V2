@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_current_user
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_current_user
 from extensions import db, cache
 from models.models import User, TrekkerInfo, StaffInfo, Booking, Trek, Notification
 from functools import wraps
@@ -19,7 +19,7 @@ def staff_required(fn):
     return wrapper
 
 
-@staff_bp.routes('/dashboard', methods=['GET'])
+@staff_bp.route('/dashboard', methods=['GET'])
 @staff_required
 def staff_dashboard():
     staff = get_current_user()
@@ -36,9 +36,9 @@ def staff_dashboard():
         'total_assigned': len(treks),
         'total_participants': sum(t['participant_count'] for t in data),
         'total_revenue': round(sum(t['revenue'] for t in data), 2),
-        'open_treks': sum(1 for t in data if t.status == 'Open'),
-        'started_treks': sum(1 for t in data if t.status == 'Started'),
-        'completed_treks': sum(1 for t in data if t.status == 'Completed')
+        'open_treks': sum(1 for t in data if t.get('status') == 'Open'),
+        'started_treks': sum(1 for t in data if t.get('status') == 'Started'),
+        'completed_treks': sum(1 for t in data if t.get('status') == 'Completed')
     }), 200
 
 
@@ -54,10 +54,6 @@ def get_treks():
     return jsonify(result), 200
 
 @staff_bp.route('/treks/<int:trek_id>', methods=['PUT'])
-
-
-
-@staff_bp.route('/treks/<int:trek_id>', methods=['PUT'] )
 @staff_required
 def update_trek(trek_id):
     staff = get_current_user()
