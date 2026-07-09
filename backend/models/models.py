@@ -33,6 +33,9 @@ class User(db.Model):
     notifications  = db.relationship('Notification', backref='user', lazy='dynamic')
 
 
+    def get_name(self):
+        return self.name or self.username
+
     def set_password(self, raw):
         self.password = generate_password_hash(raw)
 
@@ -143,14 +146,13 @@ class Trek(db.Model):
 
 
     def avg_rating(self):
-        reviews = self.reviews.all()
-        if not reviews:
-            return 0
-        return round(sum(r.rating for r in reviews) / len(reviews), 1)
+        from sqlalchemy import func
+        res = db.session.query(func.avg(Review.rating)).filter(Review.trek_id == self.id).scalar()
+        return round(res, 1) if res is not None else 0
     
 
     def to_dict(self):
-        staff    = db.session.get(User, self.staff_id) if self.staff_id else None
+        staff    = self.assigned_staff
         staff_si = staff.staff_info if staff else None
         return {
             'id':           self.id,
@@ -209,6 +211,7 @@ class Booking(db.Model):
         reviewed = Review.query.filter_by(
             user_id=self.user_id, trek_id=self.trek_id
         ).first()
+        staff = t.assigned_staff if t else None
         return {
             'id':              self.id,
             'user_id':         self.user_id,
@@ -229,6 +232,9 @@ class Booking(db.Model):
             'end_date':        t.end_date.isoformat()   if t and t.end_date   else None,
             'reviewed':        reviewed is not None,
             'review_id':       reviewed.id if reviewed else None,
+            'staff_name':      staff.name if staff else 'Unassigned',
+            'staff_phone':     staff.phone if staff else None,
+            'staff_email':     staff.email if staff else None,
         }
 
 
