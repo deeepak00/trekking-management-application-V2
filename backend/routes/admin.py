@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-# from backend.routes import user
+from flask_jwt_extended import jwt_required, get_current_user
 from extensions import db, cache
-from models.models import User, TrekkerInfo, StaffInfo, Booking, Trek, Review, Notification
+from models.models import Review, User, StaffInfo, Booking, Trek, Review
 from functools import wraps
 from datetime import date
 
@@ -13,8 +12,7 @@ def admin_required(fn):
     @wraps(fn)
     @jwt_required()
     def wrapper(*args, **kwargs):
-        current_user_username = get_jwt_identity()
-        current_user = User.query.filter_by(username=current_user_username).first()
+        current_user = get_current_user()
         if not current_user or current_user.role != 'admin':
             return jsonify({'error': 'Admin access required'}), 403
         return fn(*args, **kwargs)
@@ -104,8 +102,9 @@ def create_trek():
             location=data['location'],
             difficulty=data['difficulty'],
             total_slots=int(data['total_slots']),
-            available_slots=int(data['available_slots']),
-            staff_id=data.get ['staff_id'] or None,
+            available_slots=int(data['total_slots']),
+            duration=int(data.get('duration', 1)),
+            staff_id=data.get('staff_id') or None,
             status=data.get('status') or 'Pending',
             start_date=date.fromisoformat(data['start_date']) if data.get('start_date') else None,
             end_date=  date.fromisoformat(data['end_date']) if data.get('end_date')   else None,
