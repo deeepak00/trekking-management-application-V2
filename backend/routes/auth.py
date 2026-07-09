@@ -23,7 +23,7 @@ def register():
     username = data.get('username').strip()
     email = data.get('email').strip()
     password = data.get('password').strip()
-    role = data.get('role', 'user')  # default role is 'user'
+    role = 'user'  # Only 'user' (Trekker) role can self-register. Admin and Staff must be created programmatically/by admin.
     phone = data.get('phone','')
     bio = data.get('bio','')
 
@@ -61,8 +61,8 @@ def login():
     user = User.query.filter_by(username=username).first()
     if not user or not user.check_password(password):
         return jsonify({'error':'Invalid credentials'}), 401
-    if user.status=='blacklisted':
-        return jsonify({'error','Account blacklisted. Contact admin'}), 403
+    if user.status == 'blacklisted':
+        return jsonify({'error': 'Account blacklisted. Contact admin'}), 403
     
     token = create_access_token(identity=user)
 
