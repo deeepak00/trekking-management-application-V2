@@ -353,6 +353,13 @@ export default {
     },
     async toggleBlacklist(s) {
       const isBlack = s.status === 'blacklisted';
+      if (!isBlack) {
+        const hasActive = s.assigned_treks && s.assigned_treks.some(t => t.status !== 'Completed');
+        if (hasActive) {
+          this.$root.toast('Cannot blacklist staff guide with active trek assignments.', 'error');
+          return;
+        }
+      }
       const act = isBlack ? 'Unblacklist' : 'Blacklist';
       if (!confirm(`${act} staff guide "${s.name}"?`)) return;
       try {
@@ -361,17 +368,22 @@ export default {
         this.$root.toast('Staff blacklist status updated');
         await this.load();
       } catch (e) {
-        this.$root.toast(e.message, 'error');
+        this.$root.toast(e.message || 'Action failed', 'error');
       }
     },
     async del(s) {
+      const hasActive = s.assigned_treks && s.assigned_treks.some(t => t.status !== 'Completed');
+      if (hasActive) {
+        this.$root.toast('Cannot delete staff guide with active trek assignments.', 'error');
+        return;
+      }
       if (!confirm(`Delete guide "${s.name}"? This assigns all their current treks to Unassigned.`)) return;
       try {
         await this.$api.delete('/admin/staff/' + s.id);
         this.$root.toast('Staff guide deleted');
         await this.load();
       } catch (e) {
-        this.$root.toast(e.message, 'error');
+        this.$root.toast(e.message || 'Action failed', 'error');
       }
     }
   }

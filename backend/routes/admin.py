@@ -261,6 +261,9 @@ def update_staff(staff_id):
 @admin_required
 def delete_staff(staff_id):
     staff = User.query.filter_by(id=staff_id, role='staff').first_or_404()
+    has_active = Trek.query.filter(Trek.staff_id == staff.id, Trek.status != 'Completed').first()
+    if has_active:
+        return jsonify({'error': 'Cannot delete staff guide with active trek assignments.'}), 400
     Trek.query.filter_by(staff_id=staff.id).update({'staff_id': None})
     db.session.delete(staff)
     db.session.commit()
@@ -302,6 +305,10 @@ def update_user_status(user_id):
     status = data.get('status')
     if status not in ['active', 'blacklisted']:
         return jsonify({'error': 'Invalid status'}), 400
+    if user.role == 'staff' and status == 'blacklisted':
+        has_active = Trek.query.filter(Trek.staff_id == user.id, Trek.status != 'Completed').first()
+        if has_active:
+            return jsonify({'error': 'Cannot blacklist staff guide with active trek assignments.'}), 400
     user.status = status
     db.session.commit()
     return jsonify({'message': 'User status updated'}), 200
@@ -311,6 +318,10 @@ def update_user_status(user_id):
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     if user.role == 'admin': return jsonify({'error':'Cannot delete admin'}), 403
+    if user.role == 'staff':
+        has_active = Trek.query.filter(Trek.staff_id == user.id, Trek.status != 'Completed').first()
+        if has_active:
+            return jsonify({'error': 'Cannot delete staff guide with active trek assignments.'}), 400
     db.session.delete(user)
     db.session.commit()
     return jsonify({'message':'User deleted'}), 200
