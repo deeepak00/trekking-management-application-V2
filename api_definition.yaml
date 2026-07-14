@@ -1,0 +1,392 @@
+openapi: 3.0.3
+info:
+  title: Trekking Management Platform API
+  description: API documentation for the full-stack Trekking Management Platform (TMA) supporting Admin, Staff, and Trekker roles.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+    description: Local development Flask server
+paths:
+  /auth/register:
+    post:
+      summary: Register a new Trekker (User)
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - username
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                phone:
+                  type: string
+                bio:
+                  type: string
+                experience_level:
+                  type: string
+                  enum: [Beginner, Intermediate, Expert]
+                fitness_level:
+                  type: string
+                  enum: [Low, Medium, High]
+                preferred_difficulty:
+                  type: string
+                  enum: [Easy, Moderate, Hard]
+                emergency_contact:
+                  type: string
+                emergency_phone:
+                  type: string
+                medical_notes:
+                  type: string
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Missing required fields
+        '409':
+          description: Username or email already exists
+
+  /auth/login:
+    post:
+      summary: Log in to the platform
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+        '403':
+          description: Account blacklisted
+
+  /auth/profile:
+    get:
+      summary: Get the current user's profile
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully fetched profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      summary: Update the current user's profile
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+                bio:
+                  type: string
+                password:
+                  type: string
+                experience_level:
+                  type: string
+                fitness_level:
+                  type: string
+                preferred_difficulty:
+                  type: string
+                emergency_contact:
+                  type: string
+                emergency_phone:
+                  type: string
+                medical_notes:
+                  type: string
+                specialization:
+                  type: string
+                certification:
+                  type: string
+                years_experience:
+                  type: integer
+                language:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+
+  /admin/dashboard:
+    get:
+      summary: Get Admin dashboard analytics
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard metrics retrieved
+        '403':
+          description: Admin access required
+
+  /admin/treks:
+    get:
+      summary: List all treks (Admin view)
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Search term
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of treks
+    post:
+      summary: Create a new trek
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trek'
+      responses:
+        '201':
+          description: Trek created successfully
+
+  /admin/treks/{trek_id}:
+    put:
+      summary: Update a trek's details
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: trek_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trek'
+      responses:
+        '200':
+          description: Trek updated successfully
+        '400':
+          description: Invalid request or trek already started
+    delete:
+      summary: Delete a trek
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: trek_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Trek deleted successfully
+
+  /trekker/treks:
+    get:
+      summary: List and search/filter treks (Trekker view)
+      tags:
+        - Trekker
+      parameters:
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+        - name: duration
+          in: query
+          schema:
+            type: string
+        - name: price_max
+          in: query
+          schema:
+            type: number
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of filtered treks
+
+  /trekker/bookings:
+    get:
+      summary: List bookings of the logged-in Trekker
+      tags:
+        - Trekker
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of bookings
+    post:
+      summary: Book a trek
+      tags:
+        - Trekker
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - trek_id
+                - amount
+              properties:
+                trek_id:
+                  type: integer
+                amount:
+                  type: number
+                payment_method:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Booking successful
+        '400':
+          description: Invalid booking slots or age restrictions
+
+  /staff/dashboard:
+    get:
+      summary: Get Staff dashboard analytics
+      tags:
+        - Staff
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard metrics retrieved
+        '403':
+          description: Staff access required
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        phone:
+          type: string
+        bio:
+          type: string
+        avatar_url:
+          type: string
+        created_at:
+          type: string
+        total_bookings:
+          type: integer
+    Trek:
+      type: object
+      required:
+        - name
+        - location
+        - difficulty
+        - total_slots
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        difficulty:
+          type: string
+        duration:
+          type: integer
+        total_slots:
+          type: integer
+        available_slots:
+          type: integer
+        price:
+          type: number
+        altitude:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        description:
+          type: string
+        status:
+          type: string
