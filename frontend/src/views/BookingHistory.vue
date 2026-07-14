@@ -46,7 +46,7 @@
           <div class="card-body p-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="fw-bold text-dark fs-5">{{ b.trek_name }}</span>
-              <span class="badge bg-dark">{{ b.status }}</span>
+              <span class="badge bg-dark">{{ b.trek_status === 'Started' ? 'Started' : b.status }}</span>
             </div>
             <div class="text-muted small mb-1">Location: {{ b.trek_location }}</div>
             <div class="text-muted small mb-1">Dates: {{ b.start_date || 'TBD' }} &rarr; {{ b.end_date || 'TBD' }}</div>
@@ -72,7 +72,7 @@
             
             <div class="d-flex gap-1">
               <button 
-                v-if="b.status === 'Booked'" 
+                v-if="b.status === 'Booked' && b.trek_status !== 'Started'" 
                 @click="cancel(b.id)" 
                 class="btn btn-outline-danger btn-sm fw-bold" 
                 :disabled="cancelling === b.id"
@@ -89,7 +89,7 @@
               </button>
               <span v-if="b.status === 'Completed' && b.reviewed" class="badge bg-secondary text-dark border border-dark">Reviewed</span>
               <span v-if="b.status === 'Cancelled'" class="badge bg-secondary text-dark border border-dark">Refunded</span>
-              <span v-if="b.status === 'Started'" class="badge bg-secondary text-dark border border-dark">In Progress</span>
+              <span v-if="b.trek_status === 'Started'" class="badge bg-secondary text-dark border border-dark">In Progress</span>
             </div>
           </div>
         </div>
@@ -176,11 +176,18 @@ export default {
   computed: {
     filteredBookings() {
       if (!this.filterStatus) return this.allBookings;
-      return this.allBookings.filter(b => b.status === this.filterStatus);
+      return this.allBookings.filter(b => {
+        const effectiveStatus = (b.status === 'Booked' && b.trek_status === 'Started') ? 'Started' : b.status;
+        return effectiveStatus === this.filterStatus;
+      });
     },
     count() {
       return (s) => {
-        return s ? this.allBookings.filter(b => b.status === s).length : this.allBookings.length;
+        if (!s) return this.allBookings.length;
+        return this.allBookings.filter(b => {
+          const effectiveStatus = (b.status === 'Booked' && b.trek_status === 'Started') ? 'Started' : b.status;
+          return effectiveStatus === s;
+        }).length;
       };
     },
     totalSpent() {

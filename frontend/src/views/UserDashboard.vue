@@ -66,7 +66,7 @@
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="fw-bold text-dark">{{ b.trek_name }}</span>
-                  <span class="badge bg-dark">{{ b.status }}</span>
+                  <span class="badge bg-dark">{{ b.trek_status === 'Started' ? 'Started' : b.status }}</span>
                 </div>
                 <div class="text-muted small mb-1">Location: {{ b.trek_location }}</div>
                 <div class="text-muted small mb-1">Dates: {{ b.start_date || 'TBD' }} &rarr; {{ b.end_date || 'TBD' }}</div>
@@ -82,7 +82,7 @@
               </div>
               <div class="card-footer bg-white border-top border-dark d-flex justify-content-between align-items-center p-3">
                 <span class="fw-bold text-dark fs-5">₹{{ b.amount }}</span>
-                <button @click="cancel(b.id)" class="btn btn-outline-danger btn-sm fw-bold">Cancel</button>
+                <button v-if="b.trek_status !== 'Started'" @click="cancel(b.id)" class="btn btn-outline-danger btn-sm fw-bold">Cancel</button>
               </div>
             </div>
           </div>
@@ -110,7 +110,7 @@
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="fw-bold text-dark">{{ b.trek_name }}</span>
-                  <span class="badge bg-secondary text-dark border border-dark">{{ b.status }}</span>
+                  <span class="badge bg-secondary text-dark border border-dark">{{ b.trek_status === 'Started' ? 'Started' : b.status }}</span>
                 </div>
                 <div class="text-muted small mb-1">Location: {{ b.trek_location }}</div>
                 <div class="text-muted small mb-2">Dates: {{ b.start_date || 'TBD' }} &rarr; {{ b.end_date || 'TBD' }}</div>
@@ -125,7 +125,7 @@
               <div class="card-footer bg-white border-top border-dark d-flex justify-content-between align-items-center p-3">
                 <span class="fw-bold text-dark fs-5">₹{{ b.amount }}</span>
                 <div class="d-flex gap-1">
-                  <button v-if="b.status === 'Booked'" @click="cancel(b.id)" class="btn btn-outline-danger btn-sm fw-bold">Cancel</button>
+                  <button v-if="b.status === 'Booked' && b.trek_status !== 'Started'" @click="cancel(b.id)" class="btn btn-outline-danger btn-sm fw-bold">Cancel</button>
                   <router-link v-else-if="b.status === 'Completed' && !b.reviewed" to="/bookings" class="btn btn-outline-warning btn-sm fw-bold">Review</router-link>
                 </div>
               </div>

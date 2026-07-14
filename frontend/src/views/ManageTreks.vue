@@ -44,7 +44,7 @@
                 <th class="fw-bold">Name</th>
                 <th class="fw-bold">Location</th>
                 <th class="fw-bold">Difficulty</th>
-                <th class="fw-bold">Slots (Avail/Total)</th>
+                <th class="fw-bold">Slots (Booked/Total)</th>
                 <th class="fw-bold">Price</th>
                 <th class="fw-bold">Staff/Guide</th>
                 <th class="fw-bold">Status</th>
@@ -56,7 +56,7 @@
                 <td class="fw-bold text-break">{{ t.name }}</td>
                 <td class="text-break">{{ t.location }}</td>
                 <td><span class="badge bg-dark">{{ t.difficulty }}</span></td>
-                <td>{{ t.available_slots }} / {{ t.total_slots }}</td>
+                <td>{{ t.booked_count }} / {{ t.total_slots }}</td>
                 <td>₹{{ t.price }}</td>
                 <td class="text-break">{{ t.staff_name }}</td>
                 <td><span class="badge bg-secondary text-dark border border-dark">{{ t.status }}</span></td>
@@ -225,6 +225,9 @@ export default {
       const curr = this.form.status;
       if (curr === 'Pending' || curr === 'Approved') {
         return ['Pending', 'Approved'];
+      }
+      if (curr === 'Open' || curr === 'Closed' || curr === 'Completed') {
+        return ['Open', 'Closed', 'Completed'];
       }
       return [curr];
     }

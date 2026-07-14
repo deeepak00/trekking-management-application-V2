@@ -103,7 +103,6 @@
                     v-model.number="ef.available_slots" 
                     type="number" 
                     min="0" 
-                    :max="sel.total_slots"
                     class="form-control border-dark"
                   />
                   <span class="text-muted small">Total Capacity: {{ sel.total_slots }}</span>
@@ -114,7 +113,6 @@
                   <select v-model="ef.status" class="form-select border-dark">
                     <option>Open</option>
                     <option>Started</option>
-                    <option>Closed</option>
                     <option>Completed</option>
                   </select>
                 </div>
