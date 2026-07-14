@@ -39,15 +39,3 @@ new Vue({
   render: (h) => h(App),
 }).$mount('#app');
 
-// Register Service Worker for PWA Add to Home Screen support
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((reg) => {
-        console.log('[TMA] Service Worker registered:', reg.scope);
-      })
-      .catch((err) => {
-        console.error('[TMA] Service Worker registration failed:', err);
-      });
-  });
-}

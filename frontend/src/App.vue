@@ -17,7 +17,6 @@
       >
         <span v-if="t.type === 'error'">❌</span>
         <span v-else-if="t.type === 'warning'">⚠️</span>
-        <span v-else>✅</span>
         <span>{{ t.message }}</span>
       </div>
     </div>

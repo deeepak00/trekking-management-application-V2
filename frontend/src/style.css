@@ -171,7 +171,7 @@ tr:nth-child(even) {
   gap: 8px;
 }
 
-.tma-toast.success { background-color: #e6f4ea; color: #137333; border: 1px solid #dadce0; }
+.tma-toast.success { background-color: #e6f4ea; color: #000000; border: 1px solid #dadce0; }
 .tma-toast.error   { background-color: #fce8e6; color: #c5221f; border: 1px solid #dadce0; }
 .tma-toast.warning { background-color: #fef7e0; color: #b06000; border: 1px solid #dadce0; }
 
