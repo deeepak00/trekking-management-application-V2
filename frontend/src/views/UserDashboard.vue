@@ -31,13 +31,14 @@
           </div>
 
           <!-- Stats Grid -->
-          <div class="row row-cols-2 row-cols-md-4 g-3 mt-3">
+          <div class="row row-cols-2 row-cols-md-5 g-3 mt-3">
             <div 
               v-for="s in [
                 { val: dash.total_bookings, label: 'Total Booked' },
                 { val: dash.active_bookings, label: 'Active' },
                 { val: dash.completed_bookings || 0, label: 'Completed' },
-                { val: '₹' + dash.total_spent, label: 'Total Spent' }
+                { val: '₹' + dash.total_spent, label: 'Total Spent' },
+                { val: dash.completed_bookings || 0, label: 'History Count' }
               ]" 
               :key="s.label"
               class="col"
@@ -198,10 +199,10 @@ export default {
         const res = await this.$api.post('/export-bookings', {});
         if (res.task_id) {
           this.taskId = res.task_id;
-          this.$root.toast('CSV compile started in background! You will receive email/notifs once complete. 📊');
+          this.$root.toast('CSV compile started in background! You will receive email/notifs once complete.');
           this.pollTask(res.task_id);
         } else {
-          const r = await fetch('/api/export-bookings', {
+          const r = await fetch('/api/trekker/export-bookings', {
             method: 'POST',
             headers: { Authorization: 'Bearer ' + localStorage.getItem('tma_token') }
           });
@@ -229,7 +230,7 @@ export default {
           const r = await this.$api.get('/export-bookings/status/' + tid);
           if (r.status === 'SUCCESS') {
             clearInterval(this.taskPoll);
-            this.$root.toast('CSV export compile completed! Check email. ✅');
+            this.$root.toast('CSV export compile completed! Check email.');
             this.$root.$emit('refresh-notifications');
             await this.load();
           } else if (r.status === 'FAILURE') {

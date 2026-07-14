@@ -220,9 +220,20 @@ export default {
         const res = await this.$api.post('/export-bookings', {});
         if (res.task_id) {
           this.taskId = res.task_id;
-          this.$root.toast('CSV export compiled in background task.');
+          this.$root.toast('CSV compile started in background! You will receive email/notifs once complete.');
           this.pollTask(res.task_id);
         } else {
+          const r = await fetch('/api/trekker/export-bookings', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + localStorage.getItem('tma_token') }
+          });
+          const blob = await r.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `bookings_export.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
           this.$root.toast('CSV downloaded!');
         }
       } catch (e) {
@@ -240,14 +251,15 @@ export default {
           const r = await this.$api.get('/export-bookings/status/' + tid);
           if (r.status === 'SUCCESS') {
             clearInterval(this._poll);
-            this.$root.toast('CSV exported! Check email.');
+            this.$root.toast('CSV export compile completed! Check email.');
+            this.$root.$emit('refresh-notifications');
             await this.load();
           } else if (r.status === 'FAILURE') {
             clearInterval(this._poll);
-            this.$root.toast('CSV compile failed.', 'error');
+            this.$root.toast('CSV compile failed on worker.', 'error');
           }
         } catch (e) {}
-        if (tries > 20) clearInterval(this._poll);
+        if (tries > 25) clearInterval(this._poll);
       }, 3000);
     },
     openReview(b) {
