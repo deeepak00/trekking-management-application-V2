@@ -9,7 +9,10 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/check', methods=['GET'])
 def check():
     field = request.args.get('field')
-    value = request.args.get('value').strip()
+    value = request.args.get('value')
+    if not field or not value:
+        return jsonify({'error': 'Invalid field or value'}), 400
+    value = value.strip()
     if field not in ['username', 'email'] or not value:
         return jsonify({'error': 'Invalid field or value'}), 400
     taken = User.query.filter(getattr(User, field) == value).first() is not None
@@ -18,17 +21,26 @@ def check():
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    name = data.get('name').strip()
-    username = data.get('username').strip()
-    email = data.get('email').strip()
-    password = data.get('password').strip()
-    role = 'user'  # Only 'user' (Trekker) role can self-register. Admin and Staff must be created programmatically/by admin.
-    phone = data.get('phone','')
-    bio = data.get('bio','')
+    data = request.get_json() or {}
+    name = data.get('name')
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not name or not username or not email or not password:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    name = name.strip()
+    username = username.strip()
+    email = email.strip()
+    password = password.strip()
 
     if not all([name, username, email, password]):
         return jsonify({'error': 'Missing required fields'}), 400
+
+    role = 'user'
+    phone = data.get('phone', '')
+    bio = data.get('bio', '')
 
     if User.query.filter((User.username == username) | (User.email == email)).first():
         return jsonify({'error': 'Username or email already exists'}), 409

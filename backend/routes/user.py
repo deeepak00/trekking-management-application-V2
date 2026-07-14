@@ -48,6 +48,7 @@ def profile_stats():
 
 
 @trekker_bp.route('/treks', methods=['GET'])
+@cache.cached(timeout=180, query_string=True)
 def get_treks():
     query = (request.args.get('query') or request.args.get('q') or '').strip()
     difficulty = request.args.get('difficulty', '').strip()
@@ -57,11 +58,6 @@ def get_treks():
     min_price = request.args.get('min_price', type=float)
     max_price = request.args.get('max_price', type=float)
     sort = request.args.get('sort', 'date')
-
-    cache_key = f"treks|{query}|{difficulty}|{location}|{min_duration}|{max_duration}|{min_price}|{max_price}|{sort}"
-    cached = cache.get(cache_key)
-    if cached:
-        return jsonify(cached), 200
     
     from sqlalchemy.orm import joinedload
     treks = Trek.query.options(
@@ -86,11 +82,11 @@ def get_treks():
     elif sort == 'rating':     result.sort(key=lambda x: x['avg_rating'], reverse=True)
     else:                      result.sort(key=lambda x: x['start_date'] or '')
 
-    cache.set(cache_key, result, timeout=180)  
     return jsonify(result), 200
 
 
 @trekker_bp.route('/treks/<int:trek_id>', methods=['GET'])
+@cache.cached(timeout=180)
 def get_trek(trek_id):
     trek = Trek.query.get_or_404(trek_id)
     data = trek.to_dict()
@@ -99,6 +95,7 @@ def get_trek(trek_id):
 
 
 @trekker_bp.route('/treks/<int:trek_id>/reviews', methods=['GET'])
+@cache.cached(timeout=180)
 def get_trek_reviews(trek_id):
     return jsonify([r.to_dict() for r in
                     Review.query.filter_by(trek_id=trek_id)
@@ -211,13 +208,14 @@ def cancel_booking(booking_id):
     booking.payment_status = 'Refunded'
     if trek and trek.status == 'Open':
         trek.available_slots += 1
-    __notify(user.id, 'Booking Cancelled', f'Your booking for trek "{trek.name}" has been cancelled.', 'warning')
+    trek_name = trek.name if trek else "Deleted Trek"
+    __notify(user.id, 'Booking Cancelled', f'Your booking for trek "{trek_name}" has been cancelled.', 'warning')
     db.session.commit()
     cache.clear()
     return jsonify({
         'message': 'Booking cancelled',
         'booking': booking.to_dict(),
-        'remaining_slots': trek.available_slots
+        'remaining_slots': trek.available_slots if trek else 0
     }), 200
 
 
@@ -230,8 +228,15 @@ def create_review():
     trek_id = data.get('trek_id')
     rating = data.get('rating')
 
-    if not trek_id or not rating or not (1 <= int(rating) <= 5):
+    if not trek_id or rating is None:
         return jsonify({'error': 'Trek ID and rating (1-5) are required'}), 400
+    try:
+        rating_value = int(rating)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Rating must be a valid integer between 1 and 5'}), 400
+
+    if not (1 <= rating_value <= 5):
+        return jsonify({'error': 'Rating must be between 1 and 5'}), 400
     if not Booking.query.filter_by(user_id=user.id, trek_id=trek_id, status='Completed').first():
         return jsonify({'error': 'You can only review treks you have completed'}), 403
     if Review.query.filter_by(user_id=user.id, trek_id=trek_id).first():
@@ -337,7 +342,7 @@ def mark_all_read():
 def export_bookings_async():
     user = get_current_user()
     try:
-        from jobs import queue_export_job
+        from tasks import queue_export_job
         task_id = queue_export_job(user.id)
         return jsonify({
             'message': 'Export started! You will receive a notification when it is ready.',
@@ -350,7 +355,7 @@ def export_bookings_async():
 @trekker_bp.route('/export-bookings/status/<task_id>', methods=['GET'])
 @trekker_required
 def export_status(task_id):
-    from jobs import get_task_status
+    from tasks import get_task_status
     status_info = get_task_status(task_id)
     return jsonify({
         'status': status_info['status'],

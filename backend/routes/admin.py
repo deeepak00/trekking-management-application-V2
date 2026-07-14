@@ -115,9 +115,7 @@ def create_trek():
             altitude=data.get('altitude'), 
             price=float(data.get('price',0)),
             meeting_point=data.get('meeting_point',''), 
-            equipment_needed=data.get('equipment_needed',''),
-            min_age=int(data.get('min_age',10)), 
-            max_age=int(data.get('max_age',65)),
+            equipment_needed=data.get('equipment_needed','')
         )
         db.session.add(trek); 
         db.session.commit(); 
@@ -142,16 +140,17 @@ def update_trek(trek_id):
     if 'duration' in data: trek.duration = int(data['duration'])
     if 'altitude' in data: trek.altitude = data['altitude']
     if 'price' in data: trek.price = float(data['price'])
-    if 'min_age' in data: trek.min_age = int(data['min_age'])
-    if 'max_age' in data: trek.max_age = int(data['max_age'])
     if 'staff_id' in data: trek.staff_id  = data['staff_id'] or None
     if 'total_slots' in data:
         booked = len([b for b in trek.bookings if b.status == 'Booked'])
         new_total = int(data['total_slots'])
         if new_total < booked: return jsonify({'error': f'Cannot reduce below {booked} booked'}), 400
         trek.total_slots = new_total; trek.available_slots = new_total - booked
-    if data.get('start_date'): trek.start_date = date.fromisoformat(data['start_date'])
-    if data.get('end_date'): trek.end_date   = date.fromisoformat(data['end_date'])
+    try:
+        if data.get('start_date'): trek.start_date = date.fromisoformat(data['start_date'])
+        if data.get('end_date'): trek.end_date   = date.fromisoformat(data['end_date'])
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
 
     db.session.commit(); 
     cache.clear()
@@ -207,12 +206,21 @@ def get_staff():
 @admin_bp.route('/staff', methods=['POST'])
 @admin_required
 def create_staff():
-    data = request.get_json()
-    name = data.get('name').strip()
-    username = data.get('username').strip()
-    email = data.get('email').strip()
-    password = data.get('password').strip()
-    role = data.get('role', 'staff')  # default role is 'staff'
+    data = request.get_json() or {}
+    name = data.get('name')
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not name or not username or not email or not password:
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    name = name.strip()
+    username = username.strip()
+    email = email.strip()
+    password = password.strip()
+
+    role = data.get('role', 'staff')
     phone = data.get('phone','')
     bio = data.get('bio','')
 

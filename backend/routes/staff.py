@@ -123,8 +123,20 @@ def get_participants(trek_id):
     for b in bookings:
         booking_data = b.to_dict()
         user = User.query.get(b.user_id)
-        if user and user.trekker_info:
+        if user:
             booking_data['user'] = user.to_dict(full=True)
+            if user.trekker_info:
+                booking_data['experience_level'] = user.trekker_info.experience_level
+                booking_data['fitness_level'] = user.trekker_info.fitness_level
+                booking_data['emergency_contact'] = user.trekker_info.emergency_contact
+                booking_data['emergency_phone'] = user.trekker_info.emergency_phone
+                booking_data['medical_notes'] = user.trekker_info.medical_notes
+            else:
+                booking_data['experience_level'] = 'Beginner'
+                booking_data['fitness_level'] = 'Medium'
+                booking_data['emergency_contact'] = ''
+                booking_data['emergency_phone'] = ''
+                booking_data['medical_notes'] = ''
         participants.append(booking_data)
     return jsonify({
         'trek': trek.to_dict(),
