@@ -13,14 +13,19 @@ class Config:
     MAIL_USERNAME = '23f3004133@ds.study.iitm.ac.in'
     MAIL_PASSWORD = 'gcggadrdqyrnyyze'
     MAIL_DEFAULT_SENDER = '23f3004133@ds.study.iitm.ac.in'
+    MAIL_DEBUG=False
     
     # Admin notification recipient
-    ADMIN_EMAIL = 'admin@gmail.com'
+    ADMIN_EMAIL = '23f3004133@ds.study.iitm.ac.in'
 
     # Flask-Caching Redis configuration
     CACHE_TYPE = 'RedisCache'
     CACHE_REDIS_URL = 'redis://127.0.0.1:6379/0'
     CACHE_DEFAULT_TIMEOUT = 300
+
+    # Celery Configuration (using Redis db 1 to avoid key collisions with cache)
+    CELERY_BROKER_URL = 'redis://127.0.0.1:6379/1'
+    CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/1'
 
 class LocalConfig(Config):
     DEBUG = True

@@ -3,7 +3,6 @@ from flask_cors import CORS
 from config import Config, LocalConfig
 from extensions import db, jwt, cache, mail
 from models.models import User, TrekkerInfo, StaffInfo, Trek, Booking, Review, Wishlist, Notification
-from jobs import init_scheduler
 
 try:
     import redis
@@ -34,10 +33,9 @@ def create_app():
     mail.init_app(app)
     CORS(app, resources={r'/api/*': {'origins': '*'}})
     
-    app.app_context().push()
-    
-    db.create_all()
-    create_admin()
+    with app.app_context():
+        db.create_all()
+        create_admin()
     
     from routes.auth import auth_bp
     from routes.admin import admin_bp
@@ -48,8 +46,6 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(staff_bp, url_prefix='/api/staff')
     app.register_blueprint(trekker_bp, url_prefix='/api/trekker')
-    
-    init_scheduler(app)
     
     return app
 
