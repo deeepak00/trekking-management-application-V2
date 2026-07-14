@@ -67,11 +67,10 @@ def update_trek(trek_id):
         new_slots = int(data['available_slots'])
         if new_slots < 0:
             return jsonify({'error': 'Available slots cannot be negative'}), 400
-        if new_slots < booked:
-            return jsonify({'error': f'Available slots cannot be less than booked participants ({booked})'}), 400
         trek.available_slots = new_slots
+        trek.total_slots = new_slots + booked
     if 'status' in data:
-        allowed = ['Open', 'Started', 'Completed']
+        allowed = ['Pending', 'Approved', 'Open', 'Closed', 'Started', 'Completed']
         if data['status'] not in allowed:
             return jsonify({'error': f'Status must be one of {allowed}'}), 400
         old_status = trek.status

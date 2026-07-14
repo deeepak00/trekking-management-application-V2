@@ -217,6 +217,7 @@ class Booking(db.Model):
             'trek_name':       t.name       if t else None,
             'trek_location':   t.location   if t else None,
             'trek_difficulty': t.difficulty if t else None,
+            'trek_status':     t.status     if t else None,
             'booking_date':    self.booking_date.isoformat() if self.booking_date else None,
             'status':          self.status,
             'payment_status':  self.payment_status,
