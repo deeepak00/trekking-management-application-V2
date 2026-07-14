@@ -13,7 +13,7 @@ This is a comprehensive Trekking Management Platform designed for managing treks
 * **Flask-JWT-Extended (4.7.4)**: Token-based Secure Authentication.
 * **Flask-Caching (2.4.0)**: Redis-backed endpoint caching with automatic fallback.
 * **Flask-Mail (0.10.0)**: SMTP Email integration for reminders and monthly reports.
-* **In-process Threads**: Custom thread-safe task queue and scheduler (no separate Celery daemon needed).
+* **Celery & Celery Beat**: Asynchronous task queue and periodic job scheduler using Redis as the message broker.
 
 ### Frontend
 * **Vue 2 (2.7.16)**: Reactive User Interface.
@@ -88,14 +88,31 @@ Ensure you have the following installed:
 
 ---
 
-### 4. Asynchronous & Scheduled Tasks (Worker Architecture)
-Although `celery` is listed in `requirements.txt` for compatibility, this project is architected to run asynchronous tasks and periodic schedules **in-process** using Python daemon threads. This eliminates the need for managing a separate Celery worker process or Celery Beat scheduler:
+### 4. Asynchronous & Scheduled Tasks (Celery & Redis Worker Architecture)
+This project uses **Celery** for asynchronous task execution (such as CSV exports) and **Celery Beat** for scheduling periodic tasks:
 
-* **Background Worker Thread**: When `app.py` runs, it calls `init_scheduler(app)`. This spawns a background thread that monitors a thread-safe task queue (`queue.Queue`). When a trekker requests a CSV export of their bookings, the task is pushed onto this queue, and the background thread executes the export in the background.
-* **Background Scheduler Thread**: A separate background thread checks the system time every 60 seconds. It automatically runs the scheduled daily email reminders (at 8:00 AM) and monthly activity reports (on the 1st of the month at 6:00 AM) without requiring a separate scheduler process.
+* **Asynchronous Jobs (CSV Export)**: When a trekker requests a CSV export of their booking history, a background job is queued in Celery. The Flask application immediately returns a `task_id` for frontend polling, and the Celery worker compiles the CSV and emails it to the user.
+* **Scheduled Reminders**: Bounded to Celery Beat, a daily reminder task checks for bookings starting in 1, 2, or 3 days and sends alert notifications and HTML emails to the trekkers (configured to run daily at 8:00 AM).
+* **Monthly Activity Reports**: Bounded to Celery Beat, a report compiling task summarizes platform activity for the past month and emails it to the administrator (configured to run on the 1st of every month at 6:00 AM).
 
-**Running the tasks**:
-Simply starting the Flask application (`python app.py`) automatically starts the scheduler and worker threads. No separate commands (like `celery -A app.celery worker` or `celery -A app.celery beat`) are required.
+**Running the Background Workers:**
+To start the asynchronous tasks and scheduler, run the following commands (with active virtual environment) in the `backend/` directory:
+
+1. **Start the Redis Server**:
+   Ensure Redis is running on `127.0.0.1:6379`.
+   ```bash
+   redis-server
+   ```
+
+2. **Start the Celery Worker Process**:
+   ```bash
+   celery -A celery_app.celery_instance worker --loglevel=info
+   ```
+
+3. **Start the Celery Beat Scheduler**:
+   ```bash
+   celery -A celery_app.celery_instance beat --loglevel=info
+   ```
 
 ---
 
