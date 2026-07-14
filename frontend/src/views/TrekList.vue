@@ -265,7 +265,6 @@
                   
                   <div class="small mb-3">
                     <div class="d-flex justify-content-between mb-1"><span>Difficulty:</span><span class="fw-bold">{{ detailTrek.difficulty }}</span></div>
-                    <div class="d-flex justify-between mb-1"><span>Ages Allowed:</span><span class="fw-bold">{{ detailTrek.min_age }}–{{ detailTrek.max_age }} yrs</span></div>
                     <div class="d-flex justify-between"><span>Meeting:</span><span class="fw-bold">{{ detailTrek.meeting_point || 'TBD' }}</span></div>
                   </div>
 

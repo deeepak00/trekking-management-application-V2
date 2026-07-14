@@ -142,14 +142,6 @@
                 </select>
               </div>
 
-              <div class="col-md-6">
-                <label class="form-label fw-bold text-dark">Min Age</label>
-                <input v-model.number="form.min_age" type="number" min="1" class="form-control border-dark" />
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-bold text-dark">Max Age</label>
-                <input v-model.number="form.max_age" type="number" min="1" class="form-control border-dark" />
-              </div>
 
               <div class="col-12">
                 <label class="form-label fw-bold text-dark">Meeting Point</label>
@@ -302,9 +294,7 @@ export default {
         altitude: null,
         price: 0,
         meeting_point: '',
-        equipment_needed: '',
-        min_age: 10,
-        max_age: 65
+        equipment_needed: ''
       };
     },
     async loadTreks() {
@@ -355,9 +345,7 @@ export default {
         altitude: t.altitude,
         price: t.price,
         meeting_point: t.meeting_point || '',
-        equipment_needed: t.equipment_needed || '',
-        min_age: t.min_age,
-        max_age: t.max_age
+        equipment_needed: t.equipment_needed || ''
       };
       this.showModal = true;
     },

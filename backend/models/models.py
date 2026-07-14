@@ -135,8 +135,6 @@ class Trek(db.Model):
     price            = db.Column(db.Float, default=0.0)
     meeting_point    = db.Column(db.String(300))
     equipment_needed = db.Column(db.Text)
-    min_age          = db.Column(db.Integer, default=10)
-    max_age          = db.Column(db.Integer, default=65)
     created_at       = db.Column(db.DateTime, default=utcnow)
     updated_at       = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
@@ -181,8 +179,6 @@ class Trek(db.Model):
             'price':            self.price,
             'meeting_point':    self.meeting_point,
             'equipment_needed': self.equipment_needed,
-            'min_age':          self.min_age,
-            'max_age':          self.max_age,
             'booked_count':     self.bookings.filter_by(status='Booked').count(),
             'avg_rating':       self.avg_rating(),
             'review_count':     self.reviews.count(),
